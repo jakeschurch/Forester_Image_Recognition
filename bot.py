@@ -21,12 +21,11 @@ intermediary file for photos?
 
 laptop as part of the robot?
 
--- Project Outline (tentative):
+-- Project TODO's:
 TODO: Set up image recognition model to work starting with laptop
 TODO: Set up tether between laptop and forester. NOTE: may want to use bash.
 TODO: Set up rpyc instance between laptop and forester.
 TODO: Implement image recognition model using rpyc instance on forester.
-58786909daeb1f5607022011747abebcb7bce851
 """
 
 __author__ = "Jake Schurch"
@@ -34,7 +33,19 @@ __version__ = "0.0.1a"
 
 import tensorflow as tf
 import rpyc
-import fswebcam as fs
+import os
+
+
+class Camera(object):
+    picnum = 0
+
+    def __init__(self):
+        pass
+
+    def TakePicture(self):
+        os.system(f"fswebcam -r 352x288 -no-banner {picnum}.jpg")
+        self.picnum += 1
+
 
 if __name__ == "__main__":
     pass
