@@ -34,6 +34,8 @@ __version__ = "0.0.1a"
 import tensorflow as tf
 import rpyc
 import os
+import tarfile
+import urllib
 
 
 class Camera(object):
@@ -43,8 +45,37 @@ class Camera(object):
         pass
 
     def TakePicture(self):
-        os.system(f"fswebcam -r 352x288 -no-banner {picnum}.jpg")
-        self.picnum += 1
+        try:
+            os.system(f"fswebcam -r 352x288 -no-banner {picnum}.jpg")
+            self.picnum += 1
+        except OSError:
+            Exception("Not valid.")
+
+
+class Model(object):
+
+    def __init__(self, framework: str):
+        if "server" in framework:
+            self.InitModel
+        else:
+            pass
+
+    def InitModel(self):
+        ModelBaseURL = "http://download.tensorflow.org/models/object_detection"
+        ModelFile = "ssd_inception_v2_coco_11_06_2017.tar.gz"
+        FullURL = ModelBaseURL + "/" + ModelFile
+
+        if not os.path.exists(f"/{ModelName}"):
+            os.system(f"wget -O {FullURL}")
+            tar_file = tarfile.open(ModelFile)
+
+            # Load Frozen Model
+            for file in tar_file.getmembers():
+                if "frozen_inference_graph.pb" in file.name:
+                    tar_file.extract(file, os.getcwd())
+
+        def SetToActive(self):
+
 
 
 if __name__ == "__main__":
