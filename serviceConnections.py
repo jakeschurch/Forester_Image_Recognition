@@ -1,6 +1,8 @@
-import rpyc
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
-if __name__ == '__main__':
-    from rpyc.utils.server import OneShotServer
-    server = OneShotServer(rpyc.SlaveService, port=18888)
-    server.start()
+import rpyc
+from rpyc.utils.server import ThreadedServer
+
+server = ThreadedServer(rpyc.SlaveService, port=18888)
+server.start()

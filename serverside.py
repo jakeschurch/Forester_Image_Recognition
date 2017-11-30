@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 """
 Purpose: Be able to use robot for image recognition techniques.
@@ -15,11 +16,8 @@ server-side:
 DONE: Set up image recognition model to work starting with laptop
 DONE: Download fswebcam on distro.
 DONE: Set up tether between laptop and forester.
-TODO: Set up rpyc instance between laptop and forester.
-TODO: Implement image recognition model using rpyc instance on forester.
-
-QUESTION: Change file to bytestream?
-QUESTION: Define folder paths for images and model?
+DONE: Set up rpyc instance between laptop and forester.
+DONE: Implement image recognition model using rpyc instance on forester.
 """
 
 __author__ = "Jake Schurch"
@@ -42,8 +40,7 @@ from utils import visualization_utils as vis_util
 import rpyc
 
 NUM_CLASSES = 90
-TEST_IMAGE_DIR = os.path.join(os.getcwd(),
-                              'research/object_detection/test_images')
+TEST_IMAGE_DIR = '/home/jake/Code/PythonEnvs/Forester_Image_Recognition/Sent_Photos'
 IMAGE_SIZE = (12, 8)
 
 
