@@ -45,10 +45,10 @@ if __name__ == "__main__":
     cam.SendPicture()
     conn = rpyc.classic.connect(SERVER_IP, port=18888)
     print("connected to server")
-    conn.modules.os.system("workon tensorflow")
-    print("working on tensorflow")
     conn.modules.os.chdir(REMOTE_SCRIPT_DIR)
-    object_dict = conn.modules.os.system("python3 serverside.py")
-    for key in object_dict.keys():
-        Beep()
+    out = conn.modules.serverside.RunObjectRecognitionModel()
+    print(out, out)
+    #     object_dict = conn.modules.os.system("python3 serverside.py")
+    # print(object_dict)
+
     conn.close()

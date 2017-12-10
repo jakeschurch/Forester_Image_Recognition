@@ -92,11 +92,11 @@ class Model(object):
         return self.Labels
 
 
-def FindDetectedObjects(category_index, classes, scores, object_wanted):
+def FindDetectedObjects(category_index, boxes, classes, scores, object_wanted):
     n_objects = 0
     sum_score = 0
-    for (c, s) in zip(classes[0], scores[0]):
-        if s is not None and category_index[c]['name'] == object_wanted:
+    for (c, s) in zip(classes, scores):
+        if s is not None and s > .5 and category_index[c]['name'] == object_wanted:
             n_objects += 1
             sum_score += s
     return n_objects, sum_score / n_objects
@@ -144,7 +144,6 @@ def RunObjectRecognitionModel():
         num_detections = detection_graph.get_tensor_by_name('num_detections:0')
         return_dict = {}
         for image_n, image_path in enumerate(_LoadImages()):
-            print(image_n)
             image = Image.open(image_path)
             # the array based representation of the image will be used later in
             # order to prepare the result image with boxes and labels on it.
@@ -161,22 +160,26 @@ def RunObjectRecognitionModel():
                     image_tensor: image_np_expanded
                 })
             n_objects_detected, avg_score = FindDetectedObjects(
-                category_index, classes, scores, 'person')
+                category_index,
+                np.squeeze(boxes),
+                np.squeeze(classes), np.squeeze(scores), 'person')
 
             return_dict[image_n] = {n_objects_detected: avg_score}
             # Visualization of the results of a detection.
-            # vis_util.visualize_boxes_and_labels_on_image_array(
-            #     image_np,
-            #     np.squeeze(boxes),
-            #     np.squeeze(classes).astype(np.int32),
-            #     np.squeeze(scores),
-            #     category_index,
-            #     use_normalized_coordinates=True,
-            #     line_thickness=4)
+            vis_util.visualize_boxes_and_labels_on_image_array(
+                image_np,
+                np.squeeze(boxes),
+                np.squeeze(classes).astype(np.int32),
+                np.squeeze(scores),
+                category_index,
+                use_normalized_coordinates=True,
+                line_thickness=4)
             # plt.imshow(image_np)
             # plt.show()
+
+        # serviceConnections.deliver()
         print(return_dict)
         return return_dict
 
-if __name__ == '__main__':
-    RunObjectRecognitionModel()
+
+RunObjectRecognitionModel()
