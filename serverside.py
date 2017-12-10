@@ -22,7 +22,6 @@ DONE: Implement image recognition model using rpyc instance on forester.
 
 __author__ = "Jake Schurch"
 
-
 import os
 import sys
 os.chdir('/home/jake/Code/PythonEnvs/Forester_Image_Recognition/tensorflow')
@@ -93,7 +92,17 @@ class Model(object):
         return self.Labels
 
 
-if __name__ == '__main__':
+def FindDetectedObjects(category_index, classes, scores, object_wanted):
+    n_objects = 0
+    sum_score = 0
+    for (c, s) in zip(classes[0], scores[0]):
+        if s is not None and category_index[c]['name'] == object_wanted:
+            n_objects += 1
+            sum_score += s
+    return n_objects, sum_score / n_objects
+
+
+def RunObjectRecognitionModel():
     pathToCheck = os.path.join(os.getcwd(), Model().ModelName, Model().Graph)
 
     if not os.path.exists(pathToCheck):
@@ -116,6 +125,7 @@ if __name__ == '__main__':
     categories = label_map_util.convert_label_map_to_categories(
         label_map, max_num_classes=NUM_CLASSES, use_display_name=True)
     category_index = label_map_util.create_category_index(categories)
+
     TEST_IMAGE_PATHS = _LoadImages()
 
     with detection_graph.as_default():
@@ -132,8 +142,9 @@ if __name__ == '__main__':
             detection_classes = detection_graph.get_tensor_by_name(
                 'detection_classes:0')
         num_detections = detection_graph.get_tensor_by_name('num_detections:0')
-
-        for image_path in _LoadImages():
+        return_dict = {}
+        for image_n, image_path in enumerate(_LoadImages()):
+            print(image_n)
             image = Image.open(image_path)
             # the array based representation of the image will be used later in
             # order to prepare the result image with boxes and labels on it.
@@ -149,14 +160,23 @@ if __name__ == '__main__':
                 feed_dict={
                     image_tensor: image_np_expanded
                 })
+            n_objects_detected, avg_score = FindDetectedObjects(
+                category_index, classes, scores, 'person')
+
+            return_dict[image_n] = {n_objects_detected: avg_score}
             # Visualization of the results of a detection.
-            vis_util.visualize_boxes_and_labels_on_image_array(
-                image_np,
-                np.squeeze(boxes),
-                np.squeeze(classes).astype(np.int32),
-                np.squeeze(scores),
-                category_index,
-                use_normalized_coordinates=True,
-                line_thickness=4)
-            plt.imshow(image_np)
-            plt.show()
+            # vis_util.visualize_boxes_and_labels_on_image_array(
+            #     image_np,
+            #     np.squeeze(boxes),
+            #     np.squeeze(classes).astype(np.int32),
+            #     np.squeeze(scores),
+            #     category_index,
+            #     use_normalized_coordinates=True,
+            #     line_thickness=4)
+            # plt.imshow(image_np)
+            # plt.show()
+        print(return_dict)
+        return return_dict
+
+if __name__ == '__main__':
+    RunObjectRecognitionModel()
