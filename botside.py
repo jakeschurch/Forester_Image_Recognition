@@ -9,6 +9,7 @@ Purpose: Be able to use robot for image recognition techniques.
 __author__ = "Jake Schurch"
 
 import os
+from ev3dev.ev3 import *
 
 SERVER_IP = "10.42.0.1"
 LOCAL_PHOTO_PATH = "/home/robot/python/Photos"
@@ -26,12 +27,13 @@ class Camera(object):
     def TakePicture(self):
         self.picnum = self.picnum + 1
         os.chdir(LOCAL_PHOTO_PATH)
-        cmd = "fswebcam -r 640x480 --set brightness=90% --no-banner image_{0}.jpg".format(self.picnum)
+        options = "-r 640x480 -S 3 -D 1 -F 5 --set brightness=70% --no-banner"
+        cmd = "fswebcam {0} image_{1}.jpg".format(options, self.picnum)
         os.system(cmd)
 
     def SendPicture(self):
-        cmd = "scp image_{0}.jpg jake@{1}:{2}".format(self.picnum,
-                                            SERVER_IP, REMOTE_PHOTO_DIR)
+        cmd = "scp image_{0}.jpg jake@{1}:{2}".format(self.picnum, SERVER_IP,
+                                                      REMOTE_PHOTO_DIR)
         os.system(cmd)
 
 
@@ -46,5 +48,7 @@ if __name__ == "__main__":
     conn.modules.os.system("workon tensorflow")
     print("working on tensorflow")
     conn.modules.os.chdir(REMOTE_SCRIPT_DIR)
-    conn.modules.os.system("python3 serverside.py")
+    object_dict = conn.modules.os.system("python3 serverside.py")
+    for key in object_dict.keys():
+        Beep()
     conn.close()
