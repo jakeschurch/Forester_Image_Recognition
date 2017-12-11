@@ -44,56 +44,66 @@ class Camera(object):
 
 
 def GetImages(camera, numPhotosToTake=3, angle=120):
-    robot.Beep()
+    global left
+    global right
 
     for i in range(0, numPhotosToTake):
         camera.TakePicture()
         robot.Rotate(left, angle=angle)
+        robot.Wait(2)
+
     robot.Rotate(right, angle=(angle * numPhotosToTake))
     robot.Beep()
 
 
 def FindBestChanceOfHuman(inDict):
     maxPercentage = 0
-    iMaxPercentage = 0
+    MaxPercentageLoc = 0
     i = 0
 
-    for k, v in inDict:
-        for key, val in v:
-            v[key] = val.strip("%").split(' ')
-            if val[1] > maxPercentage:
-                maxPercentage = val[1]
-                iMaxPercentage = i
+    for key, val in inDict.items():
+        for k, v in val.items():
+            print("v: ", v)
+            if v > maxPercentage:
+                maxPercentage = v
+                MaxPercentageLoc = i
             i += 1
-    return iMaxPercentage
+    return MaxPercentageLoc, maxPercentage
 
 
-def RunProcess():
+def RunProcess(numPhotosToTake=3, angle=120):
     import rpyc
+
     global left
     global right
 
     left, right = robot.Motors('da')
     touch = robot.Sensors(one='touch')
     cam = Camera()
-    angle = 120
     GetImages(cam, angle=angle)
+    conn = rpyc.classic.connect(SERVER_IP, port=18888)
+
+    rm_cmd = "rm {0}/*".format(REMOTE_PHOTO_DIR)
+    conn.modules.os.system(rm_cmd)
     cam.SendAllPictures()
 
-    conn = rpyc.classic.connect(SERVER_IP, port=18888)
     print("connected to server")
     conn.modules.os.chdir(REMOTE_SCRIPT_DIR)
     out = conn.modules.serverside.RunObjectRecognitionModel()
 
-    iloc = FindBestChanceOfHuman(out)
+    iloc, highestChance = FindBestChanceOfHuman(out)
 
-    robot.Rotate(left, angle=(angle * iloc))
+    if highestChance < .70:
+        RunProcess(numPhotosToTake=numPhotosToTake + 1, angle=angle + 10)
+    else:
+        robot.Rotate(left, angle=(angle * iloc))
 
-    while touch.value() is None:
-        robot.Forward(left, right)
-    robot.Backward(left, right)
-    robot.Wait(0.5)
-    robot.Off(left, right)
+        while not touch.value():
+            robot.Forward(left, right)
+        robot.Backward(left, right)
+        robot.Wait(0.5)
+        robot.Off(left, right)
+        robot.Beep()
 
 
 if __name__ == "__main__":
