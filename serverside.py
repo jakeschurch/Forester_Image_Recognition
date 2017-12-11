@@ -93,12 +93,14 @@ class Model(object):
 
 
 def FindDetectedObjects(category_index, boxes, classes, scores, object_wanted):
+    '''NOTE: box array is ymin, xmin, ymax, xmax '''
     n_objects = 0
     sum_score = 0
-    for (c, s) in zip(classes, scores):
+    for (c, s, b) in zip(classes, scores, boxes):
         if s is not None and s > .5 and category_index[c]['name'] == object_wanted:
             n_objects += 1
             sum_score += s
+            print(b)
     return n_objects, sum_score / n_objects
 
 
