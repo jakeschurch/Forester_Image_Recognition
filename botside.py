@@ -43,7 +43,7 @@ class Camera(object):
         os.system(cmd)
 
 
-def GetImages(camera, numPhotosToTake=3, angle=120):
+def GetImages(camera, numPhotosToTake=3, angle=200):
     global left
     global right
 
@@ -53,32 +53,29 @@ def GetImages(camera, numPhotosToTake=3, angle=120):
         robot.Wait(2)
 
     robot.Rotate(right, angle=(angle * numPhotosToTake))
-    robot.Beep()
+    # robot.Beep()
 
 
 def FindBestChanceOfHuman(inDict):
     maxPercentage = 0
     MaxPercentageLoc = 0
-    i = 0
 
     for key, val in inDict.items():
         for k, v in val.items():
-            print("v: ", v)
             if v > maxPercentage:
                 maxPercentage = v
-                MaxPercentageLoc = i
-            i += 1
-    return MaxPercentageLoc, maxPercentage
+                MaxPercentageLoc = key
+    return int(MaxPercentageLoc), maxPercentage
 
 
-def RunProcess(numPhotosToTake=3, angle=120):
+def RunProcess(numPhotosToTake=3, angle=200):
     import rpyc
 
     global left
     global right
 
     left, right = robot.Motors('da')
-    touch = robot.Sensors(one='touch')
+    touch, null, null, null = robot.Sensors('touch', None, None, None)
     cam = Camera()
     GetImages(cam, angle=angle)
     conn = rpyc.classic.connect(SERVER_IP, port=18888)
@@ -92,18 +89,22 @@ def RunProcess(numPhotosToTake=3, angle=120):
     out = conn.modules.serverside.RunObjectRecognitionModel()
 
     iloc, highestChance = FindBestChanceOfHuman(out)
+    print(iloc, highestChance)
 
     if highestChance < .70:
-        RunProcess(numPhotosToTake=numPhotosToTake + 1, angle=angle + 10)
+        conn.close()
+        RunProcess(numPhotosToTake=numPhotosToTake + 1, angle=angle)
     else:
-        robot.Rotate(left, angle=(angle * iloc))
+        robot.Rotate(left, angle=(angle * iloc - 1))
 
         while not touch.value():
-            robot.Forward(left, right)
-        robot.Backward(left, right)
-        robot.Wait(0.5)
-        robot.Off(left, right)
+            robot.Forward(right, left, speed=100)
+            robot.Wait(0.1)
+
+        robot.Shutdown(left, right)
         robot.Beep()
+
+    conn.close()
 
 
 if __name__ == "__main__":

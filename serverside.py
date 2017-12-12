@@ -92,18 +92,21 @@ class Model(object):
         return self.Labels
 
 
-def FindDetectedObjects(category_index, boxes, classes, scores, object_wanted):
+def FindDetectedObjects(category_index, boxes, classes, scores, image_path,
+                        object_wanted):
     '''NOTE: box array is ymin, xmin, ymax, xmax '''
     n_objects = 0
     sum_score = 0
     for (c, s, b) in zip(classes, scores, boxes):
-        if s is not None and s > .5 and category_index[c]['name'] == object_wanted:
+        if s > .5 and category_index[c]['name'] == object_wanted:
             n_objects += 1
             sum_score += s
+    image_num = image_path.split("image_")[1]
+    image_num = image_num.split(".jpg")
     try:
-        return n_objects, sum_score / n_objects
+        return image_num[0], n_objects, sum_score / n_objects
     except ZeroDivisionError:
-        return 0, 0
+        return image_num[0], 0, 0
 
 
 def RunObjectRecognitionModel():
@@ -163,11 +166,15 @@ def RunObjectRecognitionModel():
                 feed_dict={
                     image_tensor: image_np_expanded
                 })
-            n_objects_detected, avg_score = FindDetectedObjects(
-                category_index, np.squeeze(boxes), np.squeeze(classes),
-                np.squeeze(scores), 'person')
 
-            return_dict[image_n] = {n_objects_detected: avg_score}
+            img_number, numdetections, avg_score = FindDetectedObjects(
+                category_index, np.squeeze(boxes), np.squeeze(classes),
+                np.squeeze(scores), image_path, 'person')
+
+            if avg_score > 0.0 or avg_score !=0:
+                return_dict[img_number] = {numdetections: avg_score}
+            else:
+                pass
             # Visualization of the results of a detection.
             # vis_util.visualize_boxes_and_labels_on_image_array(
             #     image_np,
@@ -179,7 +186,6 @@ def RunObjectRecognitionModel():
             #     line_thickness=4)
             # plt.imshow(image_np)
             # plt.show()
-
         print(return_dict)
         return return_dict
 
