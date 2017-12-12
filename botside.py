@@ -98,7 +98,7 @@ def RunProcess(numPhotosToTake=3, angle=200):
         robot.Rotate(left, angle=(angle * iloc - 1))
 
         while not touch.value():
-            robot.Forward(right, left, speed=100)
+            robot.Forward(left, right, speed=-100)
             robot.Wait(0.1)
 
         robot.Shutdown(left, right)
