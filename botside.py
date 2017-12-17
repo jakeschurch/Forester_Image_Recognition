@@ -23,18 +23,17 @@ class Camera(object):
         self.picnum = 0
 
     def GetPhotoPath(self):
-        return "{0}/image{1}.jpg".format(LOCAL_PHOTO_PATH, self.picnum)
+        return "{0}/image_0.jpg".format(LOCAL_PHOTO_PATH)
 
     def TakePicture(self):
-        self.picnum = self.picnum + 1
         os.chdir(LOCAL_PHOTO_PATH)
         options = "-r 640x480 -S 3 -D 1 -F 2 --set brightness=70% --no-banner"
-        cmd = "fswebcam {0} image_{1}.jpg".format(options, self.picnum)
+        cmd = "fswebcam {0} image_0.jpg".format(options)
         os.system(cmd)
 
     def SendPicture(self):
-        cmd = "scp image_{0}.jpg jake@{1}:{2}".format(self.picnum, SERVER_IP,
-                                                      REMOTE_PHOTO_DIR)
+        cmd = "scp image_0.jpg jake@{0}:{1}".format(SERVER_IP,
+                                                    REMOTE_PHOTO_DIR)
         os.system(cmd)
 
     def SendAllPictures(self):
@@ -43,66 +42,40 @@ class Camera(object):
         os.system(cmd)
 
 
-def GetImages(camera, numPhotosToTake=3, angle=200):
-    global left
-    global right
-
-    for i in range(0, numPhotosToTake):
-        camera.TakePicture()
-        robot.Rotate(left, angle=angle)
-        robot.Wait(2)
-
-    robot.Rotate(right, angle=(angle * numPhotosToTake))
-    # robot.Beep()
-
-
-def FindBestChanceOfHuman(inDict):
-    maxPercentage = 0
-    MaxPercentageLoc = 0
-
-    for key, val in inDict.items():
-        for k, v in val.items():
-            if v > maxPercentage:
-                maxPercentage = v
-                MaxPercentageLoc = key
-    return int(MaxPercentageLoc), maxPercentage
-
-
-def RunProcess(numPhotosToTake=3, angle=200):
+def RunProcess(angle=0):
+    # Setup
     import rpyc
-
     global left
     global right
-
     left, right = robot.Motors('da')
     touch, null, null, null = robot.Sensors('touch', None, None, None)
     cam = Camera()
-    GetImages(cam, angle=angle)
     conn = rpyc.classic.connect(SERVER_IP, port=18888)
 
-    rm_cmd = "rm {0}/*".format(REMOTE_PHOTO_DIR)
-    conn.modules.os.system(rm_cmd)
-    cam.SendAllPictures()
+    # Get Picture
+    if angle != 0:
+        robot.Rotate(left, angle)
 
-    print("connected to server")
+    cam.TakePicture()
+    # rm_cmd = "rm {0}/*".format(REMOTE_PHOTO_DIR)
+    # conn.modules.os.system(rm_cmd)
+    cam.SendPicture()
+
     conn.modules.os.chdir(REMOTE_SCRIPT_DIR)
     out = conn.modules.serverside.RunObjectRecognitionModel()
+    print(out)
 
-    iloc, highestChance = FindBestChanceOfHuman(out)
-    print(iloc, highestChance)
-
-    if highestChance < .70:
+    if out['0']["Score"] < .70:
         conn.close()
-        RunProcess(numPhotosToTake=numPhotosToTake + 1, angle=angle)
+        RunProcess(angle=120)
     else:
-        robot.Rotate(left, angle=(angle * iloc - 1))
+        robot.Rotate(left, angle=out["New Angle"])
 
         while not touch.value():
-            robot.Forward(left, right, speed=-100)
-            robot.Wait(0.1)
+            [left, right].run_timed(speed_sp=500)
 
         robot.Shutdown(left, right)
-        robot.Beep()
+        [robot.Beep() for i in range(0, 3)]
 
     conn.close()
 

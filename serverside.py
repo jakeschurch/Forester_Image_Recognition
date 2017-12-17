@@ -101,12 +101,25 @@ def FindDetectedObjects(category_index, boxes, classes, scores, image_path,
         if s > .5 and category_index[c]['name'] == object_wanted:
             n_objects += 1
             sum_score += s
+            angleToMove = FindNewAngle(b[1], b[4])
+
     image_num = image_path.split("image_")[1]
     image_num = image_num.split(".jpg")
     try:
-        return image_num[0], n_objects, sum_score / n_objects
+        return image_num[0], sum_score / n_objects, angleToMove
     except ZeroDivisionError:
         return image_num[0], 0, 0
+
+
+def FindNewAngle(minX, maxX):
+    xmidpoint = (maxX - minX) / 2
+    midCutoff = .2
+    DegreePixel = .2
+
+    if xmidpoint > .5 + midCutoff or xmidpoint < .5 - midCutoff:
+        return (xmidpoint - 0.5) * DegreePixel
+    else:
+        return 0
 
 
 def RunObjectRecognitionModel():
@@ -149,6 +162,7 @@ def RunObjectRecognitionModel():
             detection_classes = detection_graph.get_tensor_by_name(
                 'detection_classes:0')
         num_detections = detection_graph.get_tensor_by_name('num_detections:0')
+
         return_dict = {}
         for image_n, image_path in enumerate(_LoadImages()):
             image = Image.open(image_path)
@@ -167,12 +181,12 @@ def RunObjectRecognitionModel():
                     image_tensor: image_np_expanded
                 })
 
-            img_number, numdetections, avg_score = FindDetectedObjects(
+            img_number, avg_score, angle = FindDetectedObjects(
                 category_index, np.squeeze(boxes), np.squeeze(classes),
                 np.squeeze(scores), image_path, 'person')
 
-            if avg_score > 0.0 or avg_score !=0:
-                return_dict[img_number] = {numdetections: avg_score}
+            if avg_score > 0.0 or avg_score != 0:
+                return_dict[img_number] = {"Score": avg_score, "Angle": angle}
             else:
                 pass
             # Visualization of the results of a detection.
