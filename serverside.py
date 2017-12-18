@@ -24,6 +24,7 @@ __author__ = "Jake Schurch"
 
 import os
 import sys
+import math
 os.chdir('/home/jake/Code/PythonEnvs/Forester_Image_Recognition/tensorflow')
 utilPath = os.path.join(os.getcwd(), 'research/object_detection')
 sys.path.append(utilPath)
@@ -101,7 +102,7 @@ def FindDetectedObjects(category_index, boxes, classes, scores, image_path,
         if s > .5 and category_index[c]['name'] == object_wanted:
             n_objects += 1
             sum_score += s
-            angleToMove = FindNewAngle(b[1], b[4])
+            angleToMove = FindAngle(b[1], b[3], b[0], b[2])
 
     image_num = image_path.split("image_")[1]
     image_num = image_num.split(".jpg")
@@ -111,15 +112,13 @@ def FindDetectedObjects(category_index, boxes, classes, scores, image_path,
         return image_num[0], 0, 0
 
 
-def FindNewAngle(minX, maxX):
-    xmidpoint = (maxX - minX) / 2
-    midCutoff = .2
-    DegreePixel = .2
+def FindAngle(xmin, xmax, ymin, ymax):
+    xmid = (xmax + xmin) / 2
+    ymid = (ymax + ymin) / 2
 
-    if xmidpoint > .5 + midCutoff or xmidpoint < .5 - midCutoff:
-        return (xmidpoint - 0.5) * DegreePixel
-    else:
-        return 0
+    angleToReturn = math.degrees(math.atan2((ymid - 0), (xmid - 0.5)))
+    print("angle to return ", angleToReturn)
+    return angleToReturn
 
 
 def RunObjectRecognitionModel():

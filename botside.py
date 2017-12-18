@@ -47,52 +47,50 @@ def RunProcess(angle=0):
     import rpyc
     global left
     global right
-    left, right = robot.Motors('da')
+    left, right = robot.Motors('da', size="large")
     touch, null, null, null = robot.Sensors('touch', None, None, None)
     cam = Camera()
     conn = rpyc.classic.connect(SERVER_IP, port=18888)
 
     # Get Picture
     if angle != 0:
-        robot.Rotate(left, angle)
+        robot.Rotate(left, angle=angle, speed=100)
 
     cam.TakePicture()
-    # rm_cmd = "rm {0}/*".format(REMOTE_PHOTO_DIR)
-    # conn.modules.os.system(rm_cmd)
+    rm_cmd = "rm {0}/*".format(REMOTE_PHOTO_DIR)
+    conn.modules.os.system(rm_cmd)
+    conn.modules.os.system("workon tensorflow")
     cam.SendPicture()
 
     conn.modules.os.chdir(REMOTE_SCRIPT_DIR)
     out = conn.modules.serverside.RunObjectRecognitionModel()
     print(out)
 
-    if out['0']["Score"] < .70:
+    try:
+        if out['0']["Score"] < .55:
+            conn.close()
+            RunProcess(angle=120)
+        else:
+            angleToMove = out['0']["Angle"]
+
+            if angleToMove > 90:
+                print("moved left")
+                robot.Rotate(left, angle=angleToMove, speed=100)
+            else:
+                print("moved right")
+                robot.Rotate(right, angle=angleToMove, speed=100)
+
+            while not touch.value():
+                robot.Forward(left, right, speed=-80)
+
+            robot.Shutdown(left, right)
+            [robot.Beep() for i in range(0, 4)]
+    except KeyError:
         conn.close()
         RunProcess(angle=120)
-    else:
-        robot.Rotate(left, angle=out["New Angle"])
-
-        while not touch.value():
-            [left, right].run_timed(speed_sp=500)
-
-        robot.Shutdown(left, right)
-        [robot.Beep() for i in range(0, 3)]
 
     conn.close()
 
 
 if __name__ == "__main__":
     RunProcess()
-    # import rpyc
-    #
-    # cam = Camera()
-    # cam.TakePicture()
-    # cam.SendPicture()
-    # conn = rpyc.classic.connect(SERVER_IP, port=18888)
-    # print("connected to server")
-    # conn.modules.os.chdir(REMOTE_SCRIPT_DIR)
-    # out = conn.modules.serverside.RunObjectRecognitionModel()
-    # print(out, out)
-    # #     object_dict = conn.modules.os.system("python3 serverside.py")
-    # # print(object_dict)
-    #
-    # conn.close()
