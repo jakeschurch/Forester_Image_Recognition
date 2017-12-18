@@ -118,6 +118,10 @@ def FindAngle(xmin, xmax, ymin, ymax):
 
     angleToReturn = math.degrees(math.atan2((ymid - 0), (xmid - 0.5)))
     print("angle to return ", angleToReturn)
+    # if angleToReturn > 90:
+    #     return angleToReturn - 90
+    # else:
+    #     return 90 - angleToReturn
     return angleToReturn
 
 
@@ -199,6 +203,7 @@ def RunObjectRecognitionModel():
             #     line_thickness=4)
             # plt.imshow(image_np)
             # plt.show()
+
         print(return_dict)
         return return_dict
 

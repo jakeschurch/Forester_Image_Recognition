@@ -54,7 +54,7 @@ def RunProcess(angle=0):
 
     # Get Picture
     if angle != 0:
-        robot.Rotate(left, angle=angle, speed=100)
+        robot.Rotate(left, angle=angle, speed=100, time_sp=3000)
 
     cam.TakePicture()
     rm_cmd = "rm {0}/*".format(REMOTE_PHOTO_DIR)
@@ -75,10 +75,10 @@ def RunProcess(angle=0):
 
             if angleToMove > 90:
                 print("moved left")
-                robot.Rotate(left, angle=angleToMove, speed=100)
+                robot.Rotate(left, angle=angleToMove, speed=100, time_sp=3000)
             else:
                 print("moved right")
-                robot.Rotate(right, angle=angleToMove, speed=100)
+                robot.Rotate(right, angle=angleToMove, speed=100, time_sp=3000)
 
             while not touch.value():
                 robot.Forward(left, right, speed=-80)
