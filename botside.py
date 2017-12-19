@@ -8,9 +8,10 @@ Purpose: Be able to use robot for image recognition techniques.
 
 __author__ = "Jake Schurch"
 
-import os
 from ev3dev.ev3 import *
+import os
 import robot
+import time
 
 SERVER_IP = "10.42.0.1"
 LOCAL_PHOTO_PATH = "/home/robot/python/Photos"
@@ -27,7 +28,7 @@ class Camera(object):
 
     def TakePicture(self):
         os.chdir(LOCAL_PHOTO_PATH)
-        options = "-r 640x480 -S 3 -D 1 -F 2 --set brightness=70% --no-banner"
+        options = "-r 640x480 -fps 20 -S 5 -D 4 --set brightness=70% --no-banner"
         cmd = "fswebcam {0} image_0.jpg".format(options)
         os.system(cmd)
 
@@ -47,19 +48,22 @@ def RunProcess(angle=0):
     import rpyc
     global left
     global right
-    left, right = robot.Motors('da', size="large")
+    left = LargeMotor('outD')
+    right = LargeMotor('outA')
+    motors = [left, right]
     touch, null, null, null = robot.Sensors('touch', None, None, None)
     cam = Camera()
     conn = rpyc.classic.connect(SERVER_IP, port=18888)
 
     # Get Picture
     if angle != 0:
-        robot.Rotate(left, angle=angle, speed=100, time_sp=3000)
+        left.run_timed(speed_sp=50, time_sp=3000)
 
+    time.sleep(1)
     cam.TakePicture()
     rm_cmd = "rm {0}/*".format(REMOTE_PHOTO_DIR)
     conn.modules.os.system(rm_cmd)
-    conn.modules.os.system("workon tensorflow")
+    # conn.modules.os.system("workon tensorflow")
     cam.SendPicture()
 
     conn.modules.os.chdir(REMOTE_SCRIPT_DIR)
@@ -67,23 +71,31 @@ def RunProcess(angle=0):
     print(out)
 
     try:
-        if out['0']["Score"] < .55:
+        if out['0']["Score"] < .60:
             conn.close()
             RunProcess(angle=120)
         else:
             angleToMove = out['0']["Angle"]
-
-            if angleToMove > 90:
+            if angleToMove == 0:
+                pass
+            elif angleToMove > 90:
+                angleToMove = angleToMove - 90
                 print("moved left")
-                robot.Rotate(left, angle=angleToMove, speed=100, time_sp=3000)
+                left.run_timed(speed_sp=angleToMove, time_sp=3000)
+                while left.state:
+                    time.sleep(0.1)
             else:
                 print("moved right")
-                robot.Rotate(right, angle=angleToMove, speed=100, time_sp=3000)
-
+                angleToMove = 90 - angleToMove
+                right.run_timed(speed_sp=angleToMove, time_sp=3000)
+                while right.state:
+                    time.sleep(0.1)
             while not touch.value():
-                robot.Forward(left, right, speed=-80)
+                for m in motors:
+                    m.run_forever(speed_sp=-500)
+            for m in motors:
+                m.stop(stop_action="brake")
 
-            robot.Shutdown(left, right)
             [robot.Beep() for i in range(0, 4)]
     except KeyError:
         conn.close()

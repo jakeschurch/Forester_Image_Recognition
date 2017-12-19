@@ -115,14 +115,12 @@ def FindDetectedObjects(category_index, boxes, classes, scores, image_path,
 def FindAngle(xmin, xmax, ymin, ymax):
     xmid = (xmax + xmin) / 2
     ymid = (ymax + ymin) / 2
-
-    angleToReturn = math.degrees(math.atan2((ymid - 0), (xmid - 0.5)))
-    print("angle to return ", angleToReturn)
-    # if angleToReturn > 90:
-    #     return angleToReturn - 90
-    # else:
-    #     return 90 - angleToReturn
-    return angleToReturn
+    if xmid > .60 or xmid < .40:
+        angleToReturn = math.degrees(math.atan2((ymid - 0), (xmid - 0.5)))
+        print("angle to return ", angleToReturn)
+        return angleToReturn
+    else:
+        return 0
 
 
 def RunObjectRecognitionModel():
